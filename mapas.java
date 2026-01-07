@@ -66,7 +66,7 @@ public class mapas {
             }
 
             // ========= GUARDAR EN ARCHIVO =========
-            File outputFile = new File("/Users/miguelgomezcruz/Desktop/Men-de-utilidades/src/Utilidades/MapasMinecraft/mapa_chunks.txt");
+            File outputFile = new File("/Users/miguelgomezcruz/Desktop/MapasMinecraft/mapa_chunks.txt");
             try (FileWriter writer = new FileWriter(outputFile)) {
 
                 for (int cy = 0; cy < CHUNKS_PER_SIDE; cy++) {
