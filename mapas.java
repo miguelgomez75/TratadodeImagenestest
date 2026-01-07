@@ -19,7 +19,7 @@ public class mapas {
 
         try {
 
-            File imageFile = new File("/Users/miguelgomezcruz/Desktop/Men-de-utilidades/src/Utilidades/MapasMinecraft/dibujo.png");
+            File imageFile = new File("/Users/miguelgomezcruz/Desktop/MapasMinecraft/dibujo.png");
 
             System.out.println("Ruta absoluta   = " + imageFile.getAbsolutePath());
             System.out.println("Existe?         = " + imageFile.exists());
