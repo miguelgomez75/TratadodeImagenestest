@@ -50,7 +50,7 @@ public class mapas {
 
             for (int i = 0; i < 16; i++) {
                 String hex = Integer.toHexString(i);
-                File templateFile = new File("/Users/miguelgomezcruz/Desktop/Men-de-utilidades/src/Utilidades/MapasMinecraft/plantillas/" + hex + ".png");
+                File templateFile = new File("/Users/miguelgomezcruz/Desktop/MapasMinecraft/plantillas/" + hex + ".png");
 
                 if (!templateFile.exists()) {
                     throw new RuntimeException("❌ Falta plantilla: " + templateFile.getAbsolutePath());
