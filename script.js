@@ -8,6 +8,16 @@ let templates = [];
 let lastOutputText = "";
 
 // =======================
+// UTILIDAD PROGRESO
+// =======================
+function updateProgress(current, total) {
+  const percent = Math.floor((current / total) * 100);
+  document.getElementById("progressBar").style.width = percent + "%";
+  document.getElementById("progressText").textContent =
+    `Procesando... ${percent}%`;
+}
+
+// =======================
 // CARGA DE PLANTILLAS
 // =======================
 async function loadTemplates() {
@@ -17,6 +27,9 @@ async function loadTemplates() {
   canvas.width = BLOCK_SIZE;
   canvas.height = BLOCK_SIZE;
   const ctx = canvas.getContext("2d");
+
+  document.getElementById("progressText").textContent =
+    "Cargando plantillas...";
 
   for (let i = 0; i < 16; i++) {
     const hex = i.toString(16);
@@ -28,10 +41,9 @@ async function loadTemplates() {
     ctx.drawImage(img, 0, 0);
 
     const data = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE).data;
-    templates.push(data); // 👈 guardamos píxeles, no imagen
+    templates.push(data);
   }
 }
-
 
 // =======================
 // COMPARACIÓN
@@ -40,17 +52,19 @@ function matchBlock(blockData) {
   let bestScore = Infinity;
   let bestIndex = 0;
 
+  const blk = blockData.data;
+
   for (let i = 0; i < templates.length; i++) {
     let diff = 0;
     const tpl = templates[i];
-    const blk = blockData.data;
 
     for (let p = 0; p < blk.length; p += 4) {
       diff += Math.abs(blk[p]     - tpl[p]);
       diff += Math.abs(blk[p + 1] - tpl[p + 1]);
       diff += Math.abs(blk[p + 2] - tpl[p + 2]);
 
-      if (diff >= bestScore) break; // 👈 CLAVE
+      // salida temprana
+      if (diff >= bestScore) break;
     }
 
     if (diff < bestScore) {
@@ -60,20 +74,6 @@ function matchBlock(blockData) {
   }
   return bestIndex;
 }
-
-
-function compareBlocks(blockData, templateData) {
-  let diff = 0;
-  const blk = blockData.data;
-
-  for (let i = 0; i < blk.length; i += 4) {
-    diff += Math.abs(blk[i]     - templateData[i]);
-    diff += Math.abs(blk[i + 1] - templateData[i + 1]);
-    diff += Math.abs(blk[i + 2] - templateData[i + 2]);
-  }
-  return diff;
-}
-
 
 // =======================
 // PROCESADO PRINCIPAL
@@ -96,6 +96,9 @@ async function processImage(file) {
 
   let output = "";
 
+  const totalChunks = CHUNKS_PER_SIDE * CHUNKS_PER_SIDE;
+  let processedChunks = 0;
+
   for (let cy = 0; cy < CHUNKS_PER_SIDE; cy++) {
     for (let cx = 0; cx < CHUNKS_PER_SIDE; cx++) {
 
@@ -115,11 +118,20 @@ async function processImage(file) {
         output += "\n";
       }
       output += "\n";
+
+      processedChunks++;
+      updateProgress(processedChunks, totalChunks);
+
+      // deja respirar al navegador
+      await new Promise(r => setTimeout(r, 0));
     }
   }
 
   lastOutputText = output;
+
   document.getElementById("output").textContent = output;
+  document.getElementById("progressText").textContent =
+    "✔ Procesado completo";
   document.getElementById("downloadBtn").disabled = false;
 }
 
@@ -148,7 +160,9 @@ document.getElementById("runBtn").addEventListener("click", async () => {
     return;
   }
 
-  document.getElementById("output").textContent = "Procesando...";
+  document.getElementById("output").textContent = "";
+  document.getElementById("progressBar").style.width = "0%";
+  document.getElementById("progressText").textContent = "Inicializando...";
   document.getElementById("downloadBtn").disabled = true;
 
   await loadTemplates();
