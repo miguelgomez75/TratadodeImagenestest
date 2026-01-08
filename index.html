@@ -7,19 +7,25 @@
 </head>
 <body>
 
-  <header>
-    <h1>Procesador de mapas 2048×2048</h1>
-  </header>
+  <div class="app">
 
-  <section id="controls">
-    <input type="file" id="inputImage" accept="image/png">
-    <button id="runBtn">Procesar</button>
-    <button id="downloadBtn" disabled>Descargar TXT</button>
-  </section>
+    <h1>Procesador de mapas</h1>
 
-  <section id="result">
-    <pre id="output">Esperando imagen…</pre>
-  </section>
+    <div class="controls">
+      <input type="file" id="inputImage" accept="image/png">
+      <button id="runBtn">Procesar</button>
+      <button id="downloadBtn" disabled>Descargar TXT</button>
+    </div>
+
+    <!-- 🟦 BARRA DE PROGRESO -->
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-text" id="progressText">Esperando imagen…</div>
+
+    <pre id="output"></pre>
+
+  </div>
 
   <script src="script.js"></script>
 </body>
