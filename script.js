@@ -13,14 +13,25 @@ let lastOutputText = "";
 async function loadTemplates() {
   templates = [];
 
+  const canvas = document.createElement("canvas");
+  canvas.width = BLOCK_SIZE;
+  canvas.height = BLOCK_SIZE;
+  const ctx = canvas.getContext("2d");
+
   for (let i = 0; i < 16; i++) {
     const hex = i.toString(16);
     const img = new Image();
     img.src = `plantillas/${hex}.png`;
     await img.decode();
-    templates.push(img);
+
+    ctx.clearRect(0, 0, BLOCK_SIZE, BLOCK_SIZE);
+    ctx.drawImage(img, 0, 0);
+
+    const data = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE).data;
+    templates.push(data); // 👈 guardamos píxeles, no imagen
   }
 }
+
 
 // =======================
 // COMPARACIÓN
@@ -30,33 +41,39 @@ function matchBlock(blockData) {
   let bestIndex = 0;
 
   for (let i = 0; i < templates.length; i++) {
-    const score = compareBlocks(blockData, templates[i]);
-    if (score < bestScore) {
-      bestScore = score;
+    let diff = 0;
+    const tpl = templates[i];
+    const blk = blockData.data;
+
+    for (let p = 0; p < blk.length; p += 4) {
+      diff += Math.abs(blk[p]     - tpl[p]);
+      diff += Math.abs(blk[p + 1] - tpl[p + 1]);
+      diff += Math.abs(blk[p + 2] - tpl[p + 2]);
+
+      if (diff >= bestScore) break; // 👈 CLAVE
+    }
+
+    if (diff < bestScore) {
+      bestScore = diff;
       bestIndex = i;
     }
   }
   return bestIndex;
 }
 
-function compareBlocks(blockData, templateImg) {
-  const canvas = document.createElement("canvas");
-  canvas.width = BLOCK_SIZE;
-  canvas.height = BLOCK_SIZE;
-  const ctx = canvas.getContext("2d");
 
-  ctx.drawImage(templateImg, 0, 0);
-  const tpl = ctx.getImageData(0, 0, BLOCK_SIZE, BLOCK_SIZE).data;
+function compareBlocks(blockData, templateData) {
+  let diff = 0;
   const blk = blockData.data;
 
-  let diff = 0;
   for (let i = 0; i < blk.length; i += 4) {
-    diff += Math.abs(blk[i]     - tpl[i]);
-    diff += Math.abs(blk[i + 1] - tpl[i + 1]);
-    diff += Math.abs(blk[i + 2] - tpl[i + 2]);
+    diff += Math.abs(blk[i]     - templateData[i]);
+    diff += Math.abs(blk[i + 1] - templateData[i + 1]);
+    diff += Math.abs(blk[i + 2] - templateData[i + 2]);
   }
   return diff;
 }
+
 
 // =======================
 // PROCESADO PRINCIPAL
