@@ -5,8 +5,11 @@ const CHUNKS_PER_SIDE = 8;
 const BLOCKS_PER_CHUNK = 16;
 
 let templates = [];
+let lastOutputText = "";
 
-// Cargar las 16 plantillas desde /plantillas
+// =======================
+// CARGA DE PLANTILLAS
+// =======================
 async function loadTemplates() {
   templates = [];
 
@@ -19,7 +22,9 @@ async function loadTemplates() {
   }
 }
 
-// Comparar un bloque con todas las plantillas
+// =======================
+// COMPARACIÓN
+// =======================
 function matchBlock(blockData) {
   let bestScore = Infinity;
   let bestIndex = 0;
@@ -34,7 +39,6 @@ function matchBlock(blockData) {
   return bestIndex;
 }
 
-// Comparar píxel a píxel (RGB)
 function compareBlocks(blockData, templateImg) {
   const canvas = document.createElement("canvas");
   canvas.width = BLOCK_SIZE;
@@ -54,7 +58,9 @@ function compareBlocks(blockData, templateImg) {
   return diff;
 }
 
-// Procesar imagen completa
+// =======================
+// PROCESADO PRINCIPAL
+// =======================
 async function processImage(file) {
   const img = new Image();
   img.src = URL.createObjectURL(file);
@@ -76,7 +82,7 @@ async function processImage(file) {
   for (let cy = 0; cy < CHUNKS_PER_SIDE; cy++) {
     for (let cx = 0; cx < CHUNKS_PER_SIDE; cx++) {
 
-      output += `Chunk (${cx}, ${cy}):\n`;
+      output += `Chunk (${cx}, ${cy})\n`;
 
       for (let by = 0; by < BLOCKS_PER_CHUNK; by++) {
         for (let bx = 0; bx < BLOCKS_PER_CHUNK; bx++) {
@@ -95,10 +101,29 @@ async function processImage(file) {
     }
   }
 
+  lastOutputText = output;
   document.getElementById("output").textContent = output;
+  document.getElementById("downloadBtn").disabled = false;
 }
 
-// Eventos
+// =======================
+// DESCARGA TXT
+// =======================
+function downloadTXT() {
+  const blob = new Blob([lastOutputText], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "resultado.txt";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+// =======================
+// EVENTOS
+// =======================
 document.getElementById("runBtn").addEventListener("click", async () => {
   const input = document.getElementById("inputImage");
   if (!input.files.length) {
@@ -107,6 +132,10 @@ document.getElementById("runBtn").addEventListener("click", async () => {
   }
 
   document.getElementById("output").textContent = "Procesando...";
+  document.getElementById("downloadBtn").disabled = true;
+
   await loadTemplates();
   await processImage(input.files[0]);
 });
+
+document.getElementById("downloadBtn").addEventListener("click", downloadTXT);
