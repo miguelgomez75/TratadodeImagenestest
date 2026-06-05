@@ -113,7 +113,7 @@ async function processImage(file) {
           const block = ctx.getImageData(x, y, BLOCK_SIZE, BLOCK_SIZE);
           const best = matchBlock(block);
 
-          output += best.toString(16) + " ";
+          output += best.toString(16) + "  ";
         }
         output += "\n";
       }
