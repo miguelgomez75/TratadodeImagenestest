@@ -102,9 +102,11 @@ async function processImage(file) {
   for (let cy = 0; cy < CHUNKS_PER_SIDE; cy++) {
     for (let cx = 0; cx < CHUNKS_PER_SIDE; cx++) {
 
-      output += `Chunk (${cx}, ${cy})\n`;
+      // Encabezado del Chunk adaptado para la tabla
+      output += `Chunk (${cx}; ${cy})\n`;
 
       for (let by = 0; by < BLOCKS_PER_CHUNK; by++) {
+        let rowBlocks = [];
         for (let bx = 0; bx < BLOCKS_PER_CHUNK; bx++) {
 
           const x = cx * CHUNK_SIZE + bx * BLOCK_SIZE;
@@ -113,10 +115,12 @@ async function processImage(file) {
           const block = ctx.getImageData(x, y, BLOCK_SIZE, BLOCK_SIZE);
           const best = matchBlock(block);
 
-          output += best.toString(16) + "  ";
+          rowBlocks.push(best.toString(16));
         }
-        output += "\n";
+        // Unimos los bloques de la fila con punto y coma (o comas)
+        output += rowBlocks.join(";") + "\n";
       }
+      // Línea en blanco para separar chunks en la tabla
       output += "\n";
 
       processedChunks++;
@@ -136,15 +140,16 @@ async function processImage(file) {
 }
 
 // =======================
-// DESCARGA TXT
+// DESCARGA CSV (TABLA)
 // =======================
-function downloadTXT() {
-  const blob = new Blob([lastOutputText], { type: "text/plain" });
+function downloadCSV() {
+  // Añadimos el BOM de UTF-8 para que Excel detecte correctamente los caracteres
+  const blob = new Blob(["\ufeff" + lastOutputText], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "resultado.txt";
+  a.download = "resultado_tabla.csv"; // Ahora se descarga como .csv
   a.click();
 
   URL.revokeObjectURL(url);
@@ -169,4 +174,5 @@ document.getElementById("runBtn").addEventListener("click", async () => {
   await processImage(input.files[0]);
 });
 
-document.getElementById("downloadBtn").addEventListener("click", downloadTXT);
+// Cambiado para apuntar a la nueva función de descarga CSV
+document.getElementById("downloadBtn").addEventListener("click", downloadCSV);
