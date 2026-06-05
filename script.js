@@ -63,7 +63,6 @@ function matchBlock(blockData) {
       diff += Math.abs(blk[p + 1] - tpl[p + 1]);
       diff += Math.abs(blk[p + 2] - tpl[p + 2]);
 
-      // salida temprana
       if (diff >= bestScore) break;
     }
 
@@ -94,7 +93,9 @@ async function processImage(file) {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0);
 
-  let output = "";
+  let csvOutput = "";
+  const container = document.getElementById("output-container");
+  container.innerHTML = ""; // Limpiar contenido anterior
 
   const totalChunks = CHUNKS_PER_SIDE * CHUNKS_PER_SIDE;
   let processedChunks = 0;
@@ -102,54 +103,68 @@ async function processImage(file) {
   for (let cy = 0; cy < CHUNKS_PER_SIDE; cy++) {
     for (let cx = 0; cx < CHUNKS_PER_SIDE; cx++) {
 
-      // Encabezado del Chunk adaptado para la tabla
-      output += `Chunk (${cx}; ${cy})\n`;
+      // Crear estructura de tabla visual para este Chunk
+      const chunkTitle = document.createElement("h3");
+      chunkTitle.textContent = `Chunk (${cx}, ${cy})`;
+      chunkTitle.style.marginTop = "20px";
+      container.appendChild(chunkTitle);
+
+      const table = document.createElement("table");
+      table.className = "chunk-table";
+
+      csvOutput += `Chunk (${cx}; ${cy})\n`;
 
       for (let by = 0; by < BLOCKS_PER_CHUNK; by++) {
+        const tr = document.createElement("tr");
         let rowBlocks = [];
-        for (let bx = 0; bx < BLOCKS_PER_CHUNK; bx++) {
 
+        for (let bx = 0; bx < BLOCKS_PER_CHUNK; bx++) {
           const x = cx * CHUNK_SIZE + bx * BLOCK_SIZE;
           const y = cy * CHUNK_SIZE + by * BLOCK_SIZE;
 
           const block = ctx.getImageData(x, y, BLOCK_SIZE, BLOCK_SIZE);
           const best = matchBlock(block);
+          const hexValue = best.toString(16);
 
-          rowBlocks.push(best.toString(16));
+          rowBlocks.push(hexValue);
+
+          // Celda visual HTML
+          const td = document.createElement("td");
+          td.textContent = hexValue;
+          tr.appendChild(td);
         }
-        // Unimos los bloques de la fila con punto y coma (o comas)
-        output += rowBlocks.join(";") + "\n";
+
+        table.appendChild(tr);
+        csvOutput += rowBlocks.join(";") + "\n";
       }
-      // Línea en blanco para separar chunks en la tabla
-      output += "\n";
+
+      container.appendChild(table);
+      csvOutput += "\n";
 
       processedChunks++;
       updateProgress(processedChunks, totalChunks);
 
-      // deja respirar al navegador
       await new Promise(r => setTimeout(r, 0));
     }
   }
 
-  lastOutputText = output;
+  lastOutputText = csvOutput;
 
-  document.getElementById("output").textContent = output;
-  document.getElementById("progressText").textContent =
-    "✔ Procesado completo";
+  document.getElementById("progressText").textContent = "✔ Procesado completo";
   document.getElementById("downloadBtn").disabled = false;
 }
 
 // =======================
-// DESCARGA CSV (TABLA)
+// DESCARGA CSV (EXCEL)
 // =======================
 function downloadCSV() {
-  // Añadimos el BOM de UTF-8 para que Excel detecte correctamente los caracteres
+  // El caracter "\ufeff" asegura que Excel detecte la codificación UTF-8 correctamente
   const blob = new Blob(["\ufeff" + lastOutputText], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "resultado_tabla.csv"; // Ahora se descarga como .csv
+  a.download = "mapa_procesado.csv"; 
   a.click();
 
   URL.revokeObjectURL(url);
@@ -165,7 +180,7 @@ document.getElementById("runBtn").addEventListener("click", async () => {
     return;
   }
 
-  document.getElementById("output").textContent = "";
+  document.getElementById("output-container").innerHTML = "";
   document.getElementById("progressBar").style.width = "0%";
   document.getElementById("progressText").textContent = "Inicializando...";
   document.getElementById("downloadBtn").disabled = true;
@@ -174,5 +189,4 @@ document.getElementById("runBtn").addEventListener("click", async () => {
   await processImage(input.files[0]);
 });
 
-// Cambiado para apuntar a la nueva función de descarga CSV
 document.getElementById("downloadBtn").addEventListener("click", downloadCSV);
