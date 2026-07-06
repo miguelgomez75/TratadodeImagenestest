@@ -75,7 +75,9 @@ function matchBlock(blockData) {
 }
 
 // =======================
-// PROCESADO PRINCIPAL (Modificado para usar comas)
+// PROCESADO PRINCIPAL
+// Genera una única cuadrícula 128x128 (8 chunks x 16 bloques),
+// con separadores "g" cada 16 columnas y cada 16 filas.
 // =======================
 async function processImage(file) {
   const img = new Image();
@@ -93,17 +95,22 @@ async function processImage(file) {
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0);
 
-  let csvOutput = "";
   const container = document.getElementById("output-container");
   container.innerHTML = ""; // Limpiar contenido anterior
 
   const totalChunks = CHUNKS_PER_SIDE * CHUNKS_PER_SIDE;
   let processedChunks = 0;
 
+  // Tamaño total de la cuadrícula de bloques (128x128 con los valores por defecto)
+  const totalBlocksPerSide = CHUNKS_PER_SIDE * BLOCKS_PER_CHUNK;
+
+  // Matriz global donde se guarda cada valor en su posición real dentro de la imagen completa
+  const grid = Array.from({ length: totalBlocksPerSide }, () => new Array(totalBlocksPerSide));
+
   for (let cy = 0; cy < CHUNKS_PER_SIDE; cy++) {
     for (let cx = 0; cx < CHUNKS_PER_SIDE; cx++) {
 
-      // Crear estructura de tabla visual para este Chunk
+      // Crear estructura de tabla visual para este Chunk (solo para verlo en pantalla)
       const chunkTitle = document.createElement("h3");
       chunkTitle.textContent = `Chunk (${cx}, ${cy})`;
       chunkTitle.style.marginTop = "20px";
@@ -112,12 +119,8 @@ async function processImage(file) {
       const table = document.createElement("table");
       table.className = "chunk-table";
 
-      // Encabezado del Chunk en el CSV
-      csvOutput += `Chunk (${cx}-${cy})\n`;
-
       for (let by = 0; by < BLOCKS_PER_CHUNK; by++) {
         const tr = document.createElement("tr");
-        let rowBlocks = [];
 
         for (let bx = 0; bx < BLOCKS_PER_CHUNK; bx++) {
           const x = cx * CHUNK_SIZE + bx * BLOCK_SIZE;
@@ -127,7 +130,10 @@ async function processImage(file) {
           const best = matchBlock(block);
           const hexValue = best.toString(16);
 
-          rowBlocks.push(hexValue);
+          // Posición real del bloque dentro de la imagen completa
+          const globalRow = cy * BLOCKS_PER_CHUNK + by;
+          const globalCol = cx * BLOCKS_PER_CHUNK + bx;
+          grid[globalRow][globalCol] = hexValue;
 
           // Celda visual HTML
           const td = document.createElement("td");
@@ -136,17 +142,42 @@ async function processImage(file) {
         }
 
         table.appendChild(tr);
-        // CAMBIO: Ahora unimos con comas limpias para Google Sheets
-        csvOutput += rowBlocks.join(",") + "\n";
       }
 
       container.appendChild(table);
-      csvOutput += "\n";
 
       processedChunks++;
       updateProgress(processedChunks, totalChunks);
 
       await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  // Construir el CSV final recorriendo la cuadrícula completa,
+  // insertando "g" cada 16 columnas y una fila de "g" cada 16 filas.
+  let csvOutput = "";
+  const separatorColumnsCount = CHUNKS_PER_SIDE - 1; // separadores verticales entre chunks
+  const fullRowLength = totalBlocksPerSide + separatorColumnsCount;
+
+  for (let row = 0; row < totalBlocksPerSide; row++) {
+    const rowValues = [];
+
+    for (let col = 0; col < totalBlocksPerSide; col++) {
+      rowValues.push(grid[row][col]);
+
+      const isLastColumn = col === totalBlocksPerSide - 1;
+      const isChunkBoundary = (col + 1) % BLOCKS_PER_CHUNK === 0;
+      if (isChunkBoundary && !isLastColumn) {
+        rowValues.push("g");
+      }
+    }
+
+    csvOutput += rowValues.join(",") + "\n";
+
+    const isLastRow = row === totalBlocksPerSide - 1;
+    const isRowChunkBoundary = (row + 1) % BLOCKS_PER_CHUNK === 0;
+    if (isRowChunkBoundary && !isLastRow) {
+      csvOutput += new Array(fullRowLength).fill("g").join(",") + "\n";
     }
   }
 
